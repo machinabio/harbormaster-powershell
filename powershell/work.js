@@ -1,97 +1,57 @@
 'use strict';
 
 module.exports = function work(lane, manifest) {
-  let user = manifest.user ? manifest.user : 'Adminstrator';
-  let key_location = expandTilde(manifest.use_key ? manifest.key_location : '~/.ssh/id_rsa');
-  console.log('ket location: ', key_location);
-  let private_key;
   let exit_code = 1;
   let shipment = Shipments.findOne({
     lane: lane._id,
     start: manifest.shipment_start_date
   });
 
-  try {
-    private_key = fs.readFileSync(key_location, 'utf8');
-  } catch (err) {
-    manifest.error = err;
-  }
+  let shell = new ps({ });
 
-  let connection = new Client();
-  let connection_options = {
-    tryKeyboard: true,
-    host: manifest.address,
-    username: user,
-    privateKey: private_key,
-    password: manifest.password ? manifest.password : undefined
-  };
+  shell.addCommand(manifest.command);
 
-  console.log(`Logging into ${connection_options.host}`);
-
-  connection.on('ready', Meteor.bindEnvironment((err, stream) => {
-
+  shell.streams.stdout.on('data', $H.bindEnvironment(buffer => {
     console.log(
-      'Executing command "' + manifest.command + '" for:',
-      manifest.address
+      'Command "' + manifest.command + '" logged data:\n',
+      buffer.toString('utf8')
     );
-    connection.exec(
-      manifest.command, { pty: true },
-      Meteor.bindEnvironment((err, stream) => {
 
-        if (err) {
-          manifest.error = error;
-        }
+    shipment.stdout.push({
+      result: buffer.toString('utf8'),
+      date: new Date()
+    });
+    Shipments.update(shipment._id, shipment);
+  }));
 
-        stream.on('close', Meteor.bindEnvironment((code, signal) => {
+  shell.streams.stderr.on('data', $H.bindEnvironment(buffer => {
+    console.log(
+      'Command "' + manifest.command + '" errored with error:\n',
+      buffer.toString('utf8')
+    );
 
-          console.log(
-            'Command "' + manifest.command + '" exited with code',
-            code,
-            'for:',
-            manifest.address
-          );
+    shipment.stderr.push({
+      result: buffer.toString('utf8'),
+      date: new Date()
+    });
+    Shipments.update(shipment._id, shipment);
+  }));
 
-          exit_code = code;
+  shells.streams.stdout.on('close', $H.bindEnvironment(code, signal => {
+    console.log('Command "' + manifest.command + '" exited with code', code);
 
-          $H.call('Lanes#end_shipment', lane, exit_code, manifest);
+    exit_code = code;
 
-        })).on('data', Meteor.bindEnvironment((buffer) => {
+    $H.call('Lanes#end_shipment', lane, exit_code, manifest);
+  }));
 
-          console.log(
-            'Command "' + manifest.command + '" logged data:\n',
-            buffer.toString('utf8')
-          );
-
-          shipment.stdout.push({
-            result: buffer.toString('utf8'),
-            date: new Date()
-          });
-          Shipments.update(shipment._id, shipment);
-
-        })).stderr.on('data', Meteor.bindEnvironment((buffer) => {
-
-          console.log(
-            'Command "' + manifest.command + '" errored with error:\n',
-            buffer.toString('utf8')
-          );
-
-          shipment.stderr.push({
-            result: buffer.toString('utf8'),
-            date: new Date()
-          });
-          Shipments.update(shipment._id, shipment);
-
-        }));
-      }));
-
-    console.log('Connection ready.');
-
-  })).on('error', Meteor.bindEnvironment((err) => {
-    console.error('Error with connection!', err);
+  console.log('Executing command "' + manifest.command + '" in PowerShell...);
+  shell.invoke().catch(err => {
+    console.error('Error with executing PowerShell command!', err);
     if (err) manifest.error = err;
 
     $H.call('Lanes#end_shipment', lane, exit_code, manifest);
-  })).connect(connection_options);
+  });
 
   return manifest;
 };

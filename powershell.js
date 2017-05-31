@@ -12,7 +12,7 @@ let fs = require('fs');
 let expandTilde = require('expand-tilde');
 let harbor_dir = expandTilde('~/.harbormaster/harbors');
 
-let shell = require('node-powershell')
+let ps = require('node-powershell')
 
 let Lanes;
 let Users;
