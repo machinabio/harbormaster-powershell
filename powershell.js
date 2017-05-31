@@ -23,23 +23,23 @@ const NAME = 'powershell';
 module.exports = {
 
   render_input: eval(
-    fs.readFileSync(harbor_dir + '/ssh/render_input.js').toString()
+    fs.readFileSync(harbor_dir + '/powershell/render_input.js').toString()
   ),
 
   render_work_preview: eval(
-    fs.readFileSync(harbor_dir + '/ssh/render_work_preview.js').toString()
+    fs.readFileSync(harbor_dir + '/powershell/render_work_preview.js').toString()
   ),
 
   register: eval(
-    fs.readFileSync(harbor_dir + '/ssh/register.js').toString()
+    fs.readFileSync(harbor_dir + '/powershell/register.js').toString()
   ),
 
   update: eval(
-    fs.readFileSync(harbor_dir + '/ssh/update.js').toString()
+    fs.readFileSync(harbor_dir + '/powershell/update.js').toString()
   ),
 
   work: eval(
-    fs.readFileSync(harbor_dir + '/ssh/work.js').toString()
+    fs.readFileSync(harbor_dir + '/powershell/work.js').toString()
   )
 
 };
