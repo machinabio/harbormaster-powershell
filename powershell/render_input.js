@@ -1,6 +1,8 @@
 'use strict';
 
-module.exports = function render_input (values = {}) {
+module.exports = function render_input (values) {
+  values = values || {};
+
   return `
     <label>Command to execute:
       <style>
