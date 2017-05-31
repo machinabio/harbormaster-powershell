@@ -45,7 +45,7 @@ module.exports = function work(lane, manifest) {
     $H.call('Lanes#end_shipment', lane, exit_code, manifest);
   }));
 
-  console.log('Executing command "' + manifest.command + '" in PowerShell...);
+  console.log('Executing command "' + manifest.command + '" in PowerShell...');
   shell.invoke().catch(err => {
     console.error('Error with executing PowerShell command!', err);
     if (err) manifest.error = err;
